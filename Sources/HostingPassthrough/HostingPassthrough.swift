@@ -2,7 +2,9 @@
 
 import SwiftUI
 
-open class HostingParentViewController: UIViewController {
+open class HostingParentController: UIViewController {
+    public var makeBackgroundsClear = true
+    
     override public func loadView() {
         let capturer = HostingParentCapturer()
         view = capturer
@@ -17,6 +19,12 @@ open class HostingParentViewController: UIViewController {
             // so it isn't exactly called _UIHostingView, and it's a private class, so we just check against the description of it.
             // reliable as of iOS 16.3 when this was made
             String(describing: $0.self).contains("_UIHostingView")
+        }
+        
+        guard makeBackgroundsClear else { return }
+        
+        capturer.hostingViews.forEach {
+            $0.backgroundColor = .clear
         }
     }
 }
