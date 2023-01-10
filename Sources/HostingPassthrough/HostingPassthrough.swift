@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-public class HostingParentViewController: UIViewController {
+open class HostingParentViewController: UIViewController {
     override public func loadView() {
         let capturer = HostingParentCapturer()
         view = capturer
