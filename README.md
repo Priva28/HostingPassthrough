@@ -8,7 +8,8 @@ HostingPassthrough allows you to fix this by inheriting `HostingParentController
 
 <img width="646" alt="image" src="https://user-images.githubusercontent.com/40876121/211562840-6cecd964-78ee-4f48-839f-6ad93faa0a4a.png">
 
-If you don't want to force your UIHostingControllers to have clear backgrounds, set `makeBackgroundsClear = false` in `viewDidLoad()`.
+* If you don't want to force your UIHostingControllers to have clear backgrounds, set `makeBackgroundsClear = false` in `viewDidLoad()`.
+* If you want to forward touches on the base view of the HostingParentController to another view, set `forwardBaseTouchesTo` to another UIView you want to handle your touches.
 
 Some cool logic will then be applied overriding the `hitTest` method, which ignores any touches in parts of a `UIHostingController` that don't contain a SwiftUI view and pass it to whatever is underneath instead.
 
