@@ -76,14 +76,14 @@ fileprivate class HostingParentCapturer: UIView {
                 // yay we found something behind
                 // if it is the base view, then forward it to whatever we have set here
                 if let forwardBaseTouchesTo = forwardBaseTouchesTo, view == self {
-                    return forwardBaseTouchesTo
+                    return forwardBaseTouchesTo.hitTest(point, with: event)
                 } else {
                     return view
                 }
             }
         } else {
             if let forwardBaseTouchesTo = forwardBaseTouchesTo, view == self {
-                return forwardBaseTouchesTo
+                return forwardBaseTouchesTo.hitTest(point, with: event)
             } else {
                 return view
             }
