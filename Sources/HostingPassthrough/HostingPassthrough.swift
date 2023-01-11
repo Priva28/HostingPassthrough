@@ -5,6 +5,9 @@ import SwiftUI
 open class HostingParentController: UIViewController {
     public var makeBackgroundsClear = true
     
+    /// If the touches land on the base view of the HostingParentController, they will be forwarded to this view if it is not nil.
+    public var forwardBaseTouchesTo: UIView?
+    
     override public func loadView() {
         let capturer = HostingParentCapturer()
         view = capturer
@@ -21,16 +24,21 @@ open class HostingParentController: UIViewController {
             String(describing: $0.self).contains("_UIHostingView")
         }
         
-        guard makeBackgroundsClear else { return }
+        if makeBackgroundsClear {
+            capturer.hostingViews.forEach {
+                $0.backgroundColor = .clear
+            }
+        }
         
-        capturer.hostingViews.forEach {
-            $0.backgroundColor = .clear
+        if let forwardBaseTouchesTo = forwardBaseTouchesTo {
+            capturer.forwardBaseTouchesTo = forwardBaseTouchesTo
         }
     }
 }
 
 fileprivate class HostingParentCapturer: UIView {
     var hostingViews: [UIView] = []
+    var forwardBaseTouchesTo: UIView?
     
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         guard let hitTest = super.hitTest(point, with: event) else { return nil }
@@ -66,10 +74,19 @@ fileprivate class HostingParentCapturer: UIView {
                 return checkBehind(view: hitBehind, point: point, event: event)
             } else {
                 // yay we found something behind
-                return hitBehind
+                // if it is the base view, then forward it to whatever we have set here
+                if let forwardBaseTouchesTo = forwardBaseTouchesTo, view == self {
+                    return forwardBaseTouchesTo
+                } else {
+                    return view
+                }
             }
         } else {
-            return view
+            if let forwardBaseTouchesTo = forwardBaseTouchesTo, view == self {
+                return forwardBaseTouchesTo
+            } else {
+                return view
+            }
         }
     }
 }
