@@ -13,6 +13,8 @@ HostingPassthrough allows you to fix this by inheriting `HostingParentController
 
 Some cool logic will then be applied overriding the `hitTest` method, which ignores any touches in parts of a `UIHostingController` that don't contain a SwiftUI view and pass it to whatever is underneath instead.
 
+❇️ **Update** ❇️ : You can now inherit or initalise a `HostingParentView` instead of `UIView`, in the case that you aren't adding the `UIHostingController` to a parent view controller. While you should always add the `UIHostingController` to a parent view controller if possible to correctly manage view lifecycle, there may be instances where you are for example adding SwiftUI components to a reusable custom UIView in which case using `HostingParentView` would be acceptable.
+
 <br />
 <br />
 
