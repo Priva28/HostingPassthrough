@@ -9,38 +9,26 @@ open class HostingParentController: UIViewController {
     public var forwardBaseTouchesTo: UIView?
     
     override public func loadView() {
-        let capturer = HostingParentCapturer()
+        let capturer = HostingParentView()
         view = capturer
     }
     
     public override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
         
-        let capturer = view as! HostingParentCapturer
-        
-        capturer.hostingViews = view.subviews.filter {
-            // so it isn't exactly called _UIHostingView, and it's a private class, so we just check against the description of it.
-            // reliable as of iOS 16.3 when this was made
-            String(describing: $0.self).contains("_UIHostingView")
-        }
-        
-        if makeBackgroundsClear {
-            capturer.hostingViews.forEach {
-                $0.backgroundColor = .clear
-            }
-        }
-        
-        if let forwardBaseTouchesTo = forwardBaseTouchesTo {
-            capturer.forwardBaseTouchesTo = forwardBaseTouchesTo
-        }
+        let capturer = view as! HostingParentView
+        capturer.makeBackgroundsClear = makeBackgroundsClear
+        capturer.forwardBaseTouchesTo = forwardBaseTouchesTo
     }
 }
 
-fileprivate class HostingParentCapturer: UIView {
-    var hostingViews: [UIView] = []
-    var forwardBaseTouchesTo: UIView?
+/// Use HostingParentView instead of UIView in places where you aren't adding a UIHostingController to a view controller. Otherwise use HostingParentController instead.
+open class HostingParentView: UIView {
+    private var hostingViews: [UIView] = []
+    public var forwardBaseTouchesTo: UIView?
+    public var makeBackgroundsClear: Bool = true
     
-    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+    override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         guard let hitTest = super.hitTest(point, with: event) else { return nil }
         
         return checkBehind(view: hitTest, point: point, event: event)
@@ -75,18 +63,46 @@ fileprivate class HostingParentCapturer: UIView {
             } else {
                 // yay we found something behind
                 // if it is the base view, then forward it to whatever we have set here
-                if let forwardBaseTouchesTo = forwardBaseTouchesTo, view == self {
-                    return forwardBaseTouchesTo.hitTest(point, with: event)
+                if let forwardBaseTouchesTo = forwardBaseTouchesTo, hitBehind == self {
+                    // some special logic to check if we are forwarding to the superview.
+                    // if we are, then we want to make sure not to return itself again otherwise we'd be creating an endless loop.
+                    if forwardBaseTouchesTo == superview {
+                        let hit = super.hitTest(point, with: event)
+                        return hit == self ? nil : hit
+                    } else {
+                        return forwardBaseTouchesTo.hitTest(point, with: event)
+                    }
                 } else {
                     return view
                 }
             }
         } else {
             if let forwardBaseTouchesTo = forwardBaseTouchesTo, view == self {
-                return forwardBaseTouchesTo.hitTest(point, with: event)
+                if forwardBaseTouchesTo == superview {
+                    let hit = super.hitTest(point, with: event)
+                    return hit == self ? nil : hit
+                } else {
+                    return forwardBaseTouchesTo.hitTest(point, with: event)
+                }
             } else {
                 return view
             }
+        }
+    }
+    
+    override public func layoutSubviews() {
+        super.layoutSubviews()
+        
+        hostingViews = subviews.filter {
+            // so it isn't exactly called _UIHostingView, and it's a private class, so we just check against the description of it.
+            // reliable as of iOS 16.3 when this was made
+            String(describing: $0.self).contains("_UIHostingView")
+        }
+        
+        guard makeBackgroundsClear else { return }
+        
+        hostingViews.forEach {
+            $0.backgroundColor = .clear
         }
     }
 }
