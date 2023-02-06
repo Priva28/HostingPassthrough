@@ -8,6 +8,9 @@ open class HostingParentController: UIViewController {
     /// If the touches land on the base view of the HostingParentController, they will be forwarded to this view if it is not nil.
     public var forwardBaseTouchesTo: UIView?
     
+    /// If the touches land on the bottom of a SwiftUI scroll container (*not* the content), pass through these touches to the UIKit layer underneath.
+    public var ignoreTouchesOnSwiftUIScrollView = false
+    
     override public func loadView() {
         let capturer = HostingParentView()
         view = capturer
@@ -19,6 +22,7 @@ open class HostingParentController: UIViewController {
         let capturer = view as! HostingParentView
         capturer.makeBackgroundsClear = makeBackgroundsClear
         capturer.forwardBaseTouchesTo = forwardBaseTouchesTo
+        capturer.ignoreTouchesOnSwiftUIScrollView = ignoreTouchesOnSwiftUIScrollView
     }
 }
 
@@ -26,7 +30,8 @@ open class HostingParentController: UIViewController {
 open class HostingParentView: UIView {
     private var hostingViews: [UIView] = []
     public var forwardBaseTouchesTo: UIView?
-    public var makeBackgroundsClear: Bool = true
+    public var makeBackgroundsClear = true
+    public var ignoreTouchesOnSwiftUIScrollView = false
     
     override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         guard let hitTest = super.hitTest(point, with: event) else { return nil }
@@ -84,6 +89,18 @@ open class HostingParentView: UIView {
                 } else {
                     return forwardBaseTouchesTo.hitTest(point, with: event)
                 }
+                
+            // if we are hitting the back of a scroll view, it's possible you might want to pass this touch through to the uikit layer underneath. scrolling is still possible when touching items, just not the bottom of the scroll view.
+            } else if String(describing: view).contains("HostingScrollView"), view.isUserInteractionEnabled, ignoreTouchesOnSwiftUIScrollView {
+                view.isUserInteractionEnabled = false
+                
+                guard let hitBehindScrollView = super.hitTest(point, with: event) else { return nil }
+                
+                DispatchQueue.main.async {
+                    view.isUserInteractionEnabled = true
+                }
+                
+                return checkBehind(view: hitBehindScrollView, point: point, event: event)
             } else {
                 return view
             }
